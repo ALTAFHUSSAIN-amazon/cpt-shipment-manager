@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CPT Shipment Manager</title>
+<style>
+:root{--bg:#f4f6fb;--panel:#fff;--ink:#172033;--muted:#697586;--line:#e7ebf2;--blue:#315efb;--nav:#111a2e;--green:#16865b;--amber:#b7791f;--red:#c43d4b}
+*{box-sizing:border-box}body{margin:0;font:15px/1.5 Arial,sans-serif;background:var(--bg);color:var(--ink)}
+.app{display:flex;min-height:100vh}.sidebar{width:245px;background:var(--nav);color:#fff;padding:25px 16px;flex-shrink:0}
+.brand{font-size:19px;font-weight:700;padding:0 12px 25px}.brand small{display:block;color:#9eabc3;font-size:12px;font-weight:400;margin-top:4px}
+.nav button{display:block;width:100%;text-align:left;border:0;background:transparent;color:#c4cde0;padding:12px;border-radius:9px;margin:4px 0;cursor:pointer;font-size:14px}
+.nav button.active,.nav button:hover{background:#263552;color:#fff}.main{flex:1;padding:30px;max-width:1500px;margin:auto;width:100%}
+.top{display:flex;justify-content:space-between;align-items:center;gap:15px;margin-bottom:25px}.top h1{margin:0;font-size:26px}.sub{color:var(--muted);font-size:13px}
+.btn{border:0;background:var(--blue);color:#fff;border-radius:8px;padding:10px 15px;font-weight:600;cursor:pointer}.btn.secondary{background:#e9edff;color:#2448d8}.btn.danger{background:#fff0f1;color:var(--red)}
+.cards{display:grid;grid-template-columns:repeat(5,minmax(130px,1fr));gap:14px;margin-bottom:22px}
+.card,.panel{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:17px}
+.card .label{color:var(--muted);font-size:13px}.card .num{font-size:28px;font-weight:700;margin-top:5px}.card .dot{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:6px}
+.panel h2{font-size:17px;margin:0 0 15px}.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:15px}.toolbar input,.toolbar select,input,select{border:1px solid #d9dfeb;border-radius:8px;padding:10px;background:white;color:var(--ink);font:inherit}
+.toolbar input{min-width:220px;flex:1}.tablewrap{overflow-x:auto}table{border-collapse:collapse;width:100%;min-width:720px}th,td{text-align:left;padding:12px 10px;border-bottom:1px solid var(--line);font-size:13px}th{color:var(--muted);font-weight:600;background:#fafbfe}.status{display:inline-block;border-radius:20px;padding:4px 9px;font-size:11px;font-weight:700;background:#eef1f7}
+.status.Pending{background:#fff5dc;color:#946200}.status.Complete{background:#e4f7ed;color:#14734b}.status.Loaded{background:#e8efff;color:#3152b8}.status.Unloading{background:#f1eaff;color:#7144a5}.status.Missed{background:#ffeaec;color:#b02e3c}
+.actions{display:flex;gap:6px}.actions button{padding:6px 9px;font-size:12px}.empty{text-align:center;color:var(--muted);padding:30px}
+.modalback{position:fixed;inset:0;background:#11182788;display:none;align-items:center;justify-content:center;padding:18px}.modal{background:white;border-radius:14px;padding:22px;width:min(520px,100%);box-shadow:0 20px 70px #0003}.modal h2{margin-top:0}.formgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.field{display:flex;flex-direction:column;gap:5px}.field label{font-size:12px;color:var(--muted);font-weight:600}.field input,.field select{width:100%}.modalfoot{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
+.note{color:var(--muted);font-size:12px;margin-top:14px}
+@media(max-width:950px){.cards{grid-template-columns:repeat(2,1fr)}.sidebar{width:190px}.main{padding:20px}}
+@media(max-width:650px){.app{display:block}.sidebar{width:100%;padding:14px}.brand{padding:0 8px 10px}.nav{display:flex;overflow:auto;gap:5px}.nav button{white-space:nowrap;width:auto;margin:0}.main{padding:16px}.top{align-items:flex-start;flex-direction:column}.cards{grid-template-columns:repeat(2,1fr)}.formgrid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="app">
+<aside class="sidebar">
+ <div class="brand">CPT Shipment Manager<small>Practice project · Demo data stays on this device</small></div>
+ <nav class="nav" id="nav">
+  <button class="active" data-view="All">▦ Dashboard</button>
+  <button data-view="Pending">◷ Order Pending</button>
+  <button data-view="Complete">✓ Order Complete</button>
+  <button data-view="Loaded">▣ Loaded</button>
+  <button data-view="Unloading">⇩ Unloading</button>
+  <button data-view="Missed">! Miss Shipment</button>
+ </nav>
+</aside>
+<main class="main">
+ <div class="top"><div><h1 id="heading">Dashboard</h1><div class="sub">Track orders and shipment status in one place.</div></div><button class="btn" id="addBtn">＋ Add Shipment</button></div>
+ <section class="cards" id="cards"></section>
+ <section class="panel">
+  <h2 id="tableTitle">All Shipments</h2>
+  <div class="toolbar"><input id="search" placeholder="Search order, CPT, destination or truck…"><select id="filter"><option value="">All statuses</option><option>Pending</option><option>Complete</option><option>Loaded</option><option>Unloading</option><option>Missed</option></select></div>
+  <div class="tablewrap"><table><thead><tr><th>Order ID</th><th>CPT</th><th>Destination</th><th>Truck / Load</th><th>Date</th><th>Status</th><th>Actions</th></tr></thead><tbody id="rows"></tbody></table></div>
+  <div class="note">Practice version: records are saved in this browser using local storage. Do not enter real company or customer data.</div>
+ </section>
+</main>
+</div>
+<div class="modalback" id="modalback"><div class="modal">
+ <h2 id="modalTitle">Add Shipment</h2>
+ <form id="shipForm">
+  <div class="formgrid">
+   <div class="field"><label>Order ID *</label><input id="order" required placeholder="e.g. ORD-1001"></div>
+   <div class="field"><label>CPT *</label><input id="cpt" required placeholder="e.g. CPT-DEL"></div>
+   <div class="field"><label>Destination</label><input id="destination" placeholder="City / warehouse"></div>
+   <div class="field"><label>Truck / Load</label><input id="truck" placeholder="Truck or load number"></div>
+   <div class="field"><label>Date</label><input id="date" type="date"></div>
+   <div class="field"><label>Status</label><select id="status"><option>Pending</option><option>Complete</option><option>Loaded</option><option>Unloading</option><option>Missed</option></select></div>
+  </div>
+  <div class="modalfoot"><button type="button" class="btn secondary" id="cancel">Cancel</button><button class="btn" type="submit">Save Shipment</button></div>
+ </form>
+</div></div>
+<script>
+const statuses=['Pending','Complete','Loaded','Unloading','Missed'];
+const starter=[
+ {order:'ORD-1001',cpt:'CPT-DEL',destination:'Delhi',truck:'TRK-204',date:'2026-11-18',status:'Pending'},
+ {order:'ORD-1002',cpt:'CPT-JAI',destination:'Jaipur',truck:'TRK-118',date:'2026-11-18',status:'Loaded'},
+ {order:'ORD-1003',cpt:'CPT-PNP',destination:'Panipat',truck:'TRK-309',date:'2026-11-17',status:'Unloading'},
+ {order:'ORD-1004',cpt:'CPT-GGN',destination:'Gurugram',truck:'TRK-412',date:'2026-11-17',status:'Complete'},
+ {order:'ORD-1005',cpt:'CPT-LKO',destination:'Lucknow',truck:'TRK-515',date:'2026-11-16',status:'Missed'}
+];
+let shipments=JSON.parse(localStorage.getItem('cptShipments')||'null')||starter;
+let view='All',editing=null;
+const $=id=>document.getElementById(id);
+function save(){localStorage.setItem('cptShipments',JSON.stringify(shipments));render()}
+function render(){
+ const counts=Object.fromEntries(statuses.map(s=>[s,shipments.filter(x=>x.status===s).length]));
+ $('cards').innerHTML=[['Total Shipments',shipments.length,'#315efb'],...statuses.map(s=>[s,counts[s],({'Pending':'#d69b19','Complete':'#16865b','Loaded':'#315efb','Unloading':'#8757b5','Missed':'#c43d4b'})[s]])].map(([l,n,c])=>`<div class="card"><div class="label"><span class="dot" style="background:${c}"></span>${l}</div><div class="num">${n}</div></div>`).join('');
+ $('heading').textContent=view==='All'?'Dashboard':view==='Missed'?'Miss Shipment':view==='Pending'?'Order Pending':view==='Complete'?'Order Complete':view;
+ $('tableTitle').textContent=view==='All'?'All Shipments':view+' Shipments';
+ const q=$('search').value.toLowerCase(),f=$('filter').value;
+ const list=shipments.filter(x=>(view==='All'||x.status===view)&&(!f||x.status===f)&&[x.order,x.cpt,x.destination,x.truck].join(' ').toLowerCase().includes(q));
+ $('rows').innerHTML=list.length?list.map(x=>`<tr><td><b>${esc(x.order)}</b></td><td>${esc(x.cpt)}</td><td>${esc(x.destination||'—')}</td><td>${esc(x.truck||'—')}</td><td>${esc(x.date||'—')}</td><td><span class="status ${x.status}">${x.status}</span></td><td><div class="actions"><button class="btn secondary" onclick="editItem('${key(x.order)}')">Edit</button><button class="btn danger" onclick="deleteItem('${key(x.order)}')">Delete</button></div></td></tr>`).join(''):'<tr><td colspan="7" class="empty">No shipments found. Click “Add Shipment” to create one.</td></tr>';
+ document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('active',b.dataset.view===view));
+}
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function key(s){return encodeURIComponent(s)}
+function openModal(item){editing=item?.order||null;$('modalTitle').textContent=editing?'Edit Shipment':'Add Shipment';['order','cpt','destination','truck','date','status'].forEach(k=>$(k).value=item?.[k]|| (k==='status'?'Pending':''));$('order').disabled=!!editing;$('modalback').style.display='flex'}
+function closeModal(){$('modalback').style.display='none';$('order').disabled=false}
+function editItem(k){const item=shipments.find(x=>x.order===decodeURIComponent(k));if(item)openModal(item)}
+function deleteItem(k){const id=decodeURIComponent(k);if(confirm('Delete shipment '+id+'?')){shipments=shipments.filter(x=>x.order!==id);save()}}
+$('nav').addEventListener('click',e=>{const b=e.target.closest('button[data-view]');if(b){view=b.dataset.view;$('filter').value='';render()}});
+$('addBtn').onclick=()=>openModal(null);$('cancel').onclick=closeModal;
+$('modalback').addEventListener('click',e=>{if(e.target===$('modalback'))closeModal()});
+$('search').addEventListener('input',render);$('filter').addEventListener('change',render);
+$('shipForm').onsubmit=e=>{e.preventDefault();const item={order:$('order').value.trim(),cpt:$('cpt').value.trim(),destination:$('destination').value.trim(),truck:$('truck').value.trim(),date:$('date').value,status:$('status').value};if(editing){shipments=shipments.map(x=>x.order===editing?item:x)}else{if(shipments.some(x=>x.order===item.order)){alert('This Order ID already exists.');return}shipments.unshift(item)}closeModal();save()};
+render();
+</script>
+</body></html>
